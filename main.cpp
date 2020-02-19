@@ -128,30 +128,43 @@ int main(int argc, char** argv)
 			// Read in the next character of the line
 			workingChar = workingStream.get();
 
+			// If the character was a quotation mark
 			if (workingChar == '"')
 			{
+				// Read in the next character
 				workingChar = workingStream.get();
 
+				// Loop until a second quotation mark is reached
 				while (workingChar != '"')
 				{
+					// Add the current character to the second string of the array
 					temp[1] += workingChar;
+					// Read in the next character
 					workingChar = workingStream.get();
 				}
 
+				// Burn the comma after the last quotation mark if it exists
 				workingStream.get();
 			}
 
+			// If the read in character was not a quotation mark
 			else
 			{
+				// Read the rest of the line into the first string of the array
 				getline(workingStream, temp[1], ',');
 
+				// Put the read in character back at the beginning of the string
 				temp[1] = temp[1].substr(1, temp[1].length() - 2);
 			}
 
+			// Add the read in line to the data vector
 			givenData.push_back(temp);
 
+			// Read the next line from the file
 			getline(inFile, workingLine);
 		}
+
+		inFile.close();
 	}
 
 	// The output file stream for writing the indexed data
@@ -165,30 +178,42 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
+	// Loop through every artist folder
 	for (const auto & artist : fs::directory_iterator(dir))
 	{
+		// Make sure that the current item is a folder
 		if (is_directory(artist.path()))
 		{
+			// Loop through every album folder
 			for (const auto & album : fs::directory_iterator(artist))
 			{
+				// Make sure that the current item is a folder
 				if (is_directory(album.path()))
 				{
+					// Write the artist and album as an entry in the output file
 					outFile << artist.path().filename() << ',' << album.path().filename() << endl;
 
+					// If the user provided an input file
 					if (infileGiven)
 					{
+						// Boolean for determining if a matching artist-album combination was found in the read in data
 						bool matchFound = false;
 
+						// Loop through every element of the read in data
 						for (string* s : givenData)
 						{
+							// If both the artist and album match
 							if (s[0] == artist.path().filename().string() && s[1] == album.path().filename().string())
 							{
+								// A match was found
 								matchFound = true;
 							}
 						}
 
+						// If no match was found
 						if (!matchFound)
 						{
+							// Print the unmatched artist and album entry as it would appear in the output file
 							cout << artist.path().filename() << ',' << album.path().filename() << endl;
 						}
 					}
@@ -197,10 +222,15 @@ int main(int argc, char** argv)
 		}
 	}
 
+	// Close the output file
+	outFile.close();
+
+	// Clear the used memory
 	for (unsigned long i = 0; i < givenData.size(); i++)
 	{
 		delete[] givenData[i];
 	}
 
+	// We're done
 	return 0;
 }
