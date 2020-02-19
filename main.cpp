@@ -30,105 +30,7 @@ int main(int argc, char** argv)
 	// If the user provided an input file
 	if (givenOptions[INPUT] != "")
 	{
-		// The file stream for reading the input file
-		ifstream inFile(givenOptions[INPUT]);
-
-		// If the file could not be opened
-		if (!inFile)
-		{
-			// Let the user know
-			cerr << "Failed to open " << givenOptions[INPUT] << "." << endl;
-			return 1;
-		}
-
-		// String for reading in each line of the input file
-		string workingLine;
-
-		// Read in the first line of the file
-		getline(inFile, workingLine);
-		
-		// Loop through the file until the end is reached or a blank line is reached
-		while (!inFile.eof() && workingLine.compare("") != 0)
-		{
-			// Create a new string array for holding the read in values
-			string* temp = new string[2];
-
-			// String stream for parsing the read in line
-			stringstream workingStream(workingLine);
-
-			// Get the first character of the line
-			char workingChar = workingStream.get();
-
-			// If the character was a quotation mark
-			if (workingChar == '"')
-			{
-				// Read in the next character
-				workingChar = workingStream.get();
-
-				// Loop until a second quotation mark is reached
-				while (workingChar != '"')
-				{
-					// Add the current character to the first string of the array
-					temp[0] += workingChar;
-					// Read in the next character
-					workingChar = workingStream.get();
-				}
-
-				// Burn the comma after the last quotation mark
-				workingStream.get();
-			}
-
-			// If the read in character was not a quotation mark
-			else
-			{
-				// Read the rest of the line into the first string of the array
-				getline(workingStream, temp[0], ',');
-
-				// Put the read in character back at the beginning of the string
-				temp[0] = workingChar + temp[0];
-			}
-
-			// Read in the next character of the line
-			workingChar = workingStream.get();
-
-			// If the character was a quotation mark
-			if (workingChar == '"')
-			{
-				// Read in the next character
-				workingChar = workingStream.get();
-
-				// Loop until a second quotation mark is reached
-				while (workingChar != '"')
-				{
-					// Add the current character to the second string of the array
-					temp[1] += workingChar;
-					// Read in the next character
-					workingChar = workingStream.get();
-				}
-
-				// Burn the comma after the last quotation mark if it exists
-				workingStream.get();
-			}
-
-			// If the read in character was not a quotation mark
-			else
-			{
-				// Read the rest of the line into the first string of the array
-				getline(workingStream, temp[1], ',');
-
-				// Put the read in character back at the beginning of the string
-				temp[1] = temp[1].substr(1, temp[1].length() - 2);
-			}
-
-			// Add the read in line to the data vector
-			givenData.push_back(temp);
-
-			// Read the next line from the file
-			getline(inFile, workingLine);
-		}
-
-		// Close the input file
-		inFile.close();
+		givenData = readGivenData(givenOptions[INPUT]);
 	}
 
 	// The output file stream for writing the indexed data
@@ -262,5 +164,107 @@ map<int, string> parseCmd(int argc, char** argv)
 
 vector<string*> readGivenData(string input)
 {
+	vector<string*> readData;
+
+	// The file stream for reading the input file
+	ifstream inFile(input);
+
+	// If the file could not be opened
+	if (!inFile)
+	{
+		// Let the user know
+		cerr << "Failed to open " << input << "." << endl;
+		return vector<string*>();
+	}
+
+	// String for reading in each line of the input file
+	string workingLine;
+
+	// Read in the first line of the file
+	getline(inFile, workingLine);
 	
+	// Loop through the file until the end is reached or a blank line is reached
+	while (!inFile.eof() && workingLine.compare("") != 0)
+	{
+		// Create a new string array for holding the read in values
+		string* temp = new string[2];
+
+		// String stream for parsing the read in line
+		stringstream workingStream(workingLine);
+
+		// Get the first character of the line
+		char workingChar = workingStream.get();
+
+		// If the character was a quotation mark
+		if (workingChar == '"')
+		{
+			// Read in the next character
+			workingChar = workingStream.get();
+
+			// Loop until a second quotation mark is reached
+			while (workingChar != '"')
+			{
+				// Add the current character to the first string of the array
+				temp[0] += workingChar;
+				// Read in the next character
+				workingChar = workingStream.get();
+			}
+
+			// Burn the comma after the last quotation mark
+			workingStream.get();
+		}
+
+		// If the read in character was not a quotation mark
+		else
+		{
+			// Read the rest of the line into the first string of the array
+			getline(workingStream, temp[0], ',');
+
+			// Put the read in character back at the beginning of the string
+			temp[0] = workingChar + temp[0];
+		}
+
+		// Read in the next character of the line
+		workingChar = workingStream.get();
+
+		// If the character was a quotation mark
+		if (workingChar == '"')
+		{
+			// Read in the next character
+			workingChar = workingStream.get();
+
+			// Loop until a second quotation mark is reached
+			while (workingChar != '"')
+			{
+				// Add the current character to the second string of the array
+				temp[1] += workingChar;
+				// Read in the next character
+				workingChar = workingStream.get();
+			}
+
+			// Burn the comma after the last quotation mark if it exists
+			workingStream.get();
+		}
+
+		// If the read in character was not a quotation mark
+		else
+		{
+			// Read the rest of the line into the first string of the array
+			getline(workingStream, temp[1], ',');
+
+			// Put the read in character back at the beginning of the string
+			temp[1] = temp[1].substr(1, temp[1].length() - 2);
+		}
+
+		// Add the read in line to the data vector
+		readData.push_back(temp);
+
+		// Read the next line from the file
+		getline(inFile, workingLine);
+	}
+
+	// Close the input file
+	inFile.close();
+
+	return readData;
 }
