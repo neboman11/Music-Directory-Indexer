@@ -5,18 +5,11 @@
 	"tasks": [
 		{
 			"type": "shell",
-			"label": "g++ build active file",
-			"command": "/usr/bin/g++",
-			"args": [
-				"-g",
-				"${file}",
-				"-std=c++17",
-				"-Wall",
-				"-o",
-				"${fileDirname}/${fileBasenameNoExtension}"
-			],
+			"label": "Make project",
+			"command": "/usr/bin/make",
+			"args": [],
 			"options": {
-				"cwd": "/usr/bin"
+				"cwd": "${fileDirname}"
 			},
 			"problemMatcher": [
 				"$gcc"

@@ -5,12 +5,11 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "g++ build and debug active file",
+			"name": "Make project and debug",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${fileDirname}/${fileBasenameNoExtension}",
+			"program": "${fileDirname}/Music-Directory-Indexer",
 			"args": [
-				"-i Have.csv",
 				"~/Music/plex"
 			],
 			"stopAtEntry": false,
@@ -25,7 +24,7 @@
 					"ignoreFailures": true
 				}
 			],
-			"preLaunchTask": "g++ build active file",
+			"preLaunchTask": "Make project",
 			"miDebuggerPath": "/usr/bin/gdb"
 		}
 	]
