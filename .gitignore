@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# CSV Files
+*.csv
+
+# Built executable
+Music-Directory-Indexer
