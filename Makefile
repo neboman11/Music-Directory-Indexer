@@ -3,3 +3,6 @@ Music-Directory-Indexer: main.o
 
 main.o: main.cpp
 	g++ main.cpp -c -Wall -std=c++17
+
+debug: main.cpp
+	g++ main.cpp -g -Wall -std=c++17 -o debug

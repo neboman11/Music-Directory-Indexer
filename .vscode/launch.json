@@ -8,9 +8,10 @@
 			"name": "Make project and debug",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${fileDirname}/Music-Directory-Indexer",
+			"program": "${fileDirname}/debug",
 			"args": [
-				"~/Music/plex"
+				"~/Music/plex",
+				"-i music-data.csv"
 			],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",

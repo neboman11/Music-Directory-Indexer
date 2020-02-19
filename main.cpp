@@ -2,6 +2,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <map>
 #include <sstream>
 #include <filesystem>
 #include "tclap/CmdLine.h"
@@ -9,72 +10,34 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+enum CmdOptions {
+	DIRECTORY,
+	INPUT,
+	OUTPUT
+};
+
+map<int, string> parseCmd(int argc, char** argv);
+vector<string*> readGivenData(string input);
+
 int main(int argc, char** argv)
 {
-	string dir;					// The directory to index
-	string output;				// The name of the output file
-	string input;				// The name of the input file (if provided)
-	bool infileGiven = false;	// Whether or not an input file was given
-	vector<string*> givenData;	// A vector containing the data held in the input file
+	vector<string*> givenData;		// A vector containing the data held in the input file
+	map<int, string> givenOptions;	// A map of the command line options given by the user
 
-	// Try to use TCLAP to parse the command line
-	try
-	{
-		// Main command line object for parsing
-		TCLAP::CmdLine cmd("Music Directory Indexer", ' ', "1.0");
-
-		// The output file flag
-		TCLAP::ValueArg<string> outfile("o", "outfile", "The file to place the data into", false, "music-data.csv", "output CSV");
-
-		// Add the output file flag to the main cmd object
-		cmd.add(outfile);
-
-		// The input file flag
-		TCLAP::ValueArg<string> infile("i", "infile", "A CSV file to compare against when indexing the directory", false, "blank", "input CSV");
-
-		// Add the input file flag to the main cmd object
-		cmd.add(infile);
-
-		// The directory to search
-		TCLAP::UnlabeledValueArg<string> directory("directory", "The directory to index the folders of", false, ".", "directory path");
-
-		// Add the directory to the main cmd object
-		cmd.add(directory);
-
-		// Parse the command line
-		cmd.parse(argc, argv);
-
-		// Retrieve the proper values from the respective TCLAP object
-		dir = directory.getValue();
-		output = outfile.getValue();
-		infileGiven = infile.isSet();
-
-		// If the user provided an input file
-		if (infileGiven)
-		{
-			// Get the name of the file
-			input = infile.getValue();
-		}
-	}
-
-	// Catch any exceptions TCLAP may throw
-	catch(TCLAP::ArgException& e)
-	{
-		cerr << "error: " << e.error() << " for arg " << e.argId() << endl;
-		return 1;
-	}
+	givenOptions = parseCmd(argc, argv);
+	// TODO handle an empty map
 
 	// If the user provided an input file
-	if (infileGiven)
+	if (givenOptions[INPUT] != "")
 	{
 		// The file stream for reading the input file
-		ifstream inFile(input);
+		ifstream inFile(givenOptions[INPUT]);
 
 		// If the file could not be opened
 		if (!inFile)
 		{
 			// Let the user know
-			cerr << "Failed to open " << input << "." << endl;
+			cerr << "Failed to open " << givenOptions[INPUT] << "." << endl;
 			return 1;
 		}
 
@@ -169,18 +132,18 @@ int main(int argc, char** argv)
 	}
 
 	// The output file stream for writing the indexed data
-	ofstream outFile(output);
+	ofstream outFile(givenOptions[OUTPUT]);
 
 	// If the output file could not be opened
 	if (!outFile)
 	{
 		// Let the user know
-		cerr << "Failed to open " << output << "." << endl;
+		cerr << "Failed to open " << givenOptions[OUTPUT] << "." << endl;
 		return 1;
 	}
 
 	// Loop through every artist folder
-	for (const auto & artist : fs::directory_iterator(dir))
+	for (const auto & artist : fs::directory_iterator(givenOptions[DIRECTORY]))
 	{
 		// Make sure that the current item is a folder
 		if (is_directory(artist.path()))
@@ -195,7 +158,7 @@ int main(int argc, char** argv)
 					outFile << artist.path().filename() << ',' << album.path().filename() << endl;
 
 					// If the user provided an input file
-					if (infileGiven)
+					if (givenOptions[INPUT] != "")
 					{
 						// Boolean for determining if a matching artist-album combination was found in the read in data
 						bool matchFound = false;
@@ -234,4 +197,70 @@ int main(int argc, char** argv)
 
 	// We're done
 	return 0;
+}
+
+map<int, string> parseCmd(int argc, char** argv)
+{
+	map<int, string> parsedCmd;
+
+	// Try to use TCLAP to parse the command line
+	try
+	{
+		// Main command line object for parsing
+		TCLAP::CmdLine cmd("Music Directory Indexer", ' ', "1.0");
+
+		// The output file flag
+		TCLAP::ValueArg<string> outfile("o", "outfile", "The file to place the data into", false, "music-data.csv", "output CSV");
+
+		// Add the output file flag to the main cmd object
+		cmd.add(outfile);
+
+		// The input file flag
+		TCLAP::ValueArg<string> infile("i", "infile", "A CSV file to compare against when indexing the directory", false, "blank", "input CSV");
+
+		// Add the input file flag to the main cmd object
+		cmd.add(infile);
+
+		// The directory to search
+		TCLAP::UnlabeledValueArg<string> directory("directory", "The directory to index the folders of", false, ".", "directory path");
+
+		// Add the directory to the main cmd object
+		cmd.add(directory);
+
+		// Parse the command line
+		cmd.parse(argc, argv);
+
+		// Retrieve the proper values from the respective TCLAP object
+		parsedCmd[DIRECTORY] = directory.getValue();
+		parsedCmd[OUTPUT] = outfile.getValue();
+
+		// If the user provided an input file
+		if (infile.isSet())
+		{
+			// Get the name of the file
+			parsedCmd[INPUT] = infile.getValue();
+		}
+
+		// If the user did not provide an input file
+		else
+		{
+			// Set the file name to a null string
+			parsedCmd[INPUT] = "";
+		}
+	}
+
+	// Catch any exceptions TCLAP may throw
+	catch(TCLAP::ArgException& e)
+	{
+		cerr << "error: " << e.error() << " for arg " << e.argId() << endl;
+		return map<int, string>();
+	}
+
+	// Return the parsed command line options
+	return parsedCmd;
+}
+
+vector<string*> readGivenData(string input)
+{
+	
 }
