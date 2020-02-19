@@ -164,6 +164,7 @@ int main(int argc, char** argv)
 			getline(inFile, workingLine);
 		}
 
+		// Close the input file
 		inFile.close();
 	}
 
