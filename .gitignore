@@ -37,3 +37,9 @@
 # Built executable
 Music-Directory-Indexer
 debug
+
+# Autoconf files
+config.log
+autom4te.cache/*
+Makefile
+config.status

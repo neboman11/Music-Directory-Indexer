@@ -1,0 +1,10 @@
+CXX=@CXX@
+LD=@CXX@
+CXXFLAGS=@CXXFLAGS@ -Wall -std=c++17
+
+Music-Directory-Indexer: main.o
+	$(LD) -o $@ $^
+
+clean:
+	rm -f Music-Directory-Indexer *.o
+.PHONY: clean
