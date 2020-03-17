@@ -5,7 +5,8 @@
 #include <map>
 #include <sstream>
 #include <filesystem>
-#include "tclap/CmdLine.h"
+#include <algorithm>
+#include <tclap/CmdLine.h>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -20,7 +21,12 @@ enum CmdOptions {
 
 map<int, string> parseCmd(int argc, char** argv);
 vector<string*> readGivenData(string input);
+vector<string*> indexDirectory(string path);
+void writeFoundData(string path, vector<string*> foundData);
+bool sortByArtist(string* i, string* j) { return i[0] < j[0]; }
+bool sortByAlbum(string* i, string* j) { return i[1] < j[1]; }
 
+// TODO exception handling
 int main(int argc, char** argv)
 {
 	vector<string*> givenData;		// A vector containing the data held in the input file
@@ -30,7 +36,6 @@ int main(int argc, char** argv)
 	vector<string*> missingData;	// A vector containing all the read in data that was not found in the file tree
 
 	givenOptions = parseCmd(argc, argv);
-	// TODO handle an empty map
 
 	// If the user provided an input file
 	if (givenOptions[INPUT] != "")
@@ -38,79 +43,57 @@ int main(int argc, char** argv)
 		givenData = readGivenData(givenOptions[INPUT]);
 	}
 
-	// Loop through every artist folder
-	for (const auto & artist : fs::directory_iterator(givenOptions[DIRECTORY]))
-	{
-		// Make sure that the current item is a folder
-		if (is_directory(artist.path()))
-		{
-			// Loop through every album folder
-			for (const auto & album : fs::directory_iterator(artist))
-			{
-				// Make sure that the current item is a folder
-				if (is_directory(album.path()))
-				{
-					string* temp1 = new string[2];
-					temp1[0] = artist.path().filename().string();
-					temp1[1] = album.path().filename().string();
-					foundData.push_back(temp1);
-
-					// If the user provided an input file
-					if (givenOptions[INPUT] != "")
-					{
-						// Boolean for determining if a matching artist-album combination was found in the read in data
-						bool matchFound = false;
-
-						// Loop through every element of the read in data
-						for (string* s : givenData)
-						{
-							// If both the artist and album match
-							if (s[0] == artist.path().filename().string() && s[1] == album.path().filename().string())
-							{
-								// A match was found
-								matchFound = true;
-							}
-						}
-
-						// If no match was found
-						if (!matchFound)
-						{
-							string* temp2 = new string[2];
-							temp2[0] = artist.path().filename().string();
-							temp2[1] = album.path().filename().string();
-							newData.push_back(temp2);
-						}
-					}
-				}
-			}
-		}
-	}
+	foundData = indexDirectory(givenOptions[DIRECTORY]);
 
 	// Sort the data first
-
-	// The output file stream for writing the indexed data
-	ofstream outFile(givenOptions[OUTPUT]);
-
-	// If the output file could not be opened
-	if (!outFile)
+	if (givenOptions[SORT_BY_ARTIST] != "")
 	{
-		// Let the user know
-		cerr << "Failed to open " << givenOptions[OUTPUT] << "." << endl;
-		return 1;
+		if (givenOptions[INPUT] != "")
+		{
+			sort(givenData.begin(), givenData.end(), sortByArtist);
+		}
+
+		sort(foundData.begin(), foundData.end(), sortByArtist);
 	}
 
-	for (string* s : foundData)
+	if (givenOptions[SORT_BY_ALBUM] != "")
 	{
-		// Write the artist and album as an entry in the output file
-		outFile << "\"" << s[0] << "\"" << ',' << "\"" << s[1] << "\"" << endl;
+		if (givenOptions[INPUT] != "")
+		{
+			sort(givenData.begin(), givenData.end(), sortByAlbum);
+		}
+
+		sort(foundData.begin(), foundData.end(), sortByAlbum);
 	}
 
-	// Close the output file
-	outFile.close();
+	writeFoundData(givenOptions[OUTPUT], foundData);
 
 	// If the user provided an input file
 	if (givenOptions[INPUT] != "")
 	{
+		for (string* foundE : foundData)
+		{
+			// Boolean for determining if a matching artist-album combination was found in the read in data
+			bool matchFound = false;
+
+			// Loop through every element of the read in data
+			for (string* s : givenData)
+			{
+				// If both the artist and album match
+				if (s[0] == foundE[0] && s[1] == foundE[1])
+				{
+					// A match was found
+					matchFound = true;
+				}
+			}
+
+			// If no match was found
+			if (!matchFound)
+			{
+				newData.push_back(foundE);
+			}
+		}
+
 		// Sort the data first
 
 		// Print the new data to stdout
@@ -170,16 +153,6 @@ int main(int argc, char** argv)
 		delete[] foundData[i];
 	}
 
-	// If the user provided an input file
-	if (givenOptions[INPUT] != "")
-	{
-		// Clear the used memory
-		for (unsigned long i = 0; i < newData.size(); i++)
-		{
-			delete[] newData[i];
-		}
-	}
-
 	// We're done
 	return 0;
 }
@@ -212,6 +185,18 @@ map<int, string> parseCmd(int argc, char** argv)
 		// Add the directory to the main cmd object
 		cmd.add(directory);
 
+		// Whether to sort by artist
+		TCLAP::SwitchArg sortArtist("r", "sort-artist", "Sort all output by artist", false);
+
+		// Add it to the main cmd object
+		cmd.add(sortArtist);
+
+		// Whether to sort by album
+		TCLAP::SwitchArg sortAlbum("l", "sort-album", "Sort all output by album", false);
+
+		// Add it to the main cmd object
+		cmd.add(sortAlbum);
+
 		// Parse the command line
 		cmd.parse(argc, argv);
 
@@ -232,32 +217,53 @@ map<int, string> parseCmd(int argc, char** argv)
 			// Set the file name to a null string
 			parsedCmd[INPUT] = "";
 		}
+
+		if (sortArtist.getValue() && sortAlbum.getValue())
+		{
+			// Print an error message describing the issue                                                                                                                                                                                          
+			cerr << "Invalid options given, can only sort by album OR artists, not both." << endl;
+
+			// Print the usage statement                                                                                                                                                                                                            
+			cmd.getOutput()->usage(cmd);
+
+			throw exception();
+		}
+
+		if (sortArtist.getValue())
+		{
+			parsedCmd[SORT_BY_ARTIST] = "true";
+		}
+
+		else if (sortAlbum.getValue())
+		{
+			parsedCmd[SORT_BY_ALBUM] = "true";
+		}
 	}
 
 	// Catch any exceptions TCLAP may throw
 	catch(TCLAP::ArgException& e)
 	{
 		cerr << "error: " << e.error() << " for arg " << e.argId() << endl;
-		return map<int, string>();
+		throw e;
 	}
 
 	// Return the parsed command line options
 	return parsedCmd;
 }
 
-vector<string*> readGivenData(string input)
+vector<string*> readGivenData(string path)
 {
 	vector<string*> readData;
 
 	// The file stream for reading the input file
-	ifstream inFile(input);
+	ifstream inFile(path);
 
 	// If the file could not be opened
 	if (!inFile)
 	{
 		// Let the user know
-		cerr << "Failed to open " << input << "." << endl;
-		return vector<string*>();
+		cerr << "Failed to open " << path << "." << endl;
+		throw exception();
 	}
 
 	// String for reading in each line of the input file
@@ -350,4 +356,56 @@ vector<string*> readGivenData(string input)
 	inFile.close();
 
 	return readData;
+}
+
+
+vector<string*> indexDirectory(string path)
+{
+	vector<string*> foundData;
+
+	// Loop through every artist folder
+	for (const auto & artist : fs::directory_iterator(path))
+	{
+		// Make sure that the current item is a folder
+		if (is_directory(artist.path()))
+		{
+			// Loop through every album folder
+			for (const auto & album : fs::directory_iterator(artist))
+			{
+				// Make sure that the current item is a folder
+				if (is_directory(album.path()))
+				{
+					string* temp1 = new string[2];
+					temp1[0] = artist.path().filename().string();
+					temp1[1] = album.path().filename().string();
+					foundData.push_back(temp1);
+				}
+			}
+		}
+	}
+
+	return foundData;
+}
+
+void writeFoundData(string path, vector<string*> foundData)
+{
+	// The output file stream for writing the indexed data
+	ofstream outFile(path);
+
+	// If the output file could not be opened
+	if (!outFile)
+	{
+		// Let the user know
+		cerr << "Failed to open " << path << "." << endl;
+		throw exception();
+	}
+
+	for (string* s : foundData)
+	{
+		// Write the artist and album as an entry in the output file
+		outFile << "\"" << s[0] << "\"" << ',' << "\"" << s[1] << "\"" << endl;
+	}
+
+	// Close the output file
+	outFile.close();
 }
