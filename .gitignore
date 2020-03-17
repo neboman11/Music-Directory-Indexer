@@ -43,3 +43,6 @@ config.log
 autom4te.cache/*
 Makefile
 config.status
+
+# VS Code files
+.vscode/*
