@@ -56,7 +56,7 @@ int main(int argc, char** argv)
 		sort(foundData.begin(), foundData.end(), sortByArtist);
 	}
 
-	if (givenOptions[SORT_BY_ALBUM] != "")
+	else if (givenOptions[SORT_BY_ALBUM] != "")
 	{
 		if (givenOptions[INPUT] != "")
 		{
@@ -94,8 +94,6 @@ int main(int argc, char** argv)
 			}
 		}
 
-		// Sort the data first
-
 		// Print the new data to stdout
 		// Header
 		cout << "=====================NEW-DATA=====================\n";
@@ -126,8 +124,6 @@ int main(int argc, char** argv)
 				missingData.push_back(givenE);
 			}
 		}
-
-		// Sort the data first
 
 		// Print the missing data to stdout
 		// Header
